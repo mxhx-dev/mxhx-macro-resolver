@@ -226,14 +226,22 @@ class MXHXMacroResolver implements IMXHXResolver {
 				var nextCommaIndex = paramsString.indexOf(",", searchIndex);
 				if (nextRightBracketIndex != -1
 					&& ((nextCommaIndex == -1 && nextLeftBracketIndex == -1)
-						|| (nextLeftBracketIndex != -1 && nextRightBracketIndex < nextLeftBracketIndex)
-						|| (nextCommaIndex != -1 && nextRightBracketIndex < nextCommaIndex))) {
+						|| (nextCommaIndex == -1 && nextLeftBracketIndex != -1 && nextRightBracketIndex < nextLeftBracketIndex)
+						|| (nextLeftBracketIndex == -1 && nextCommaIndex != -1 && nextRightBracketIndex < nextCommaIndex)
+						|| (nextLeftBracketIndex != -1
+							&& nextCommaIndex != -1
+							&& nextRightBracketIndex < nextLeftBracketIndex
+							&& nextRightBracketIndex < nextCommaIndex))) {
 					stackSize--;
 					searchIndex = nextRightBracketIndex + 1;
 				} else if (nextLeftBracketIndex != -1
 					&& ((nextCommaIndex == -1 && nextLeftBracketIndex == -1)
-						|| (nextCommaIndex != -1 && nextLeftBracketIndex < nextCommaIndex)
-						|| (nextRightBracketIndex != -1 && nextLeftBracketIndex < nextRightBracketIndex))) {
+						|| (nextRightBracketIndex == -1 && nextCommaIndex != -1 && nextLeftBracketIndex < nextCommaIndex)
+						|| (nextCommaIndex == -1 && nextRightBracketIndex != -1 && nextLeftBracketIndex < nextRightBracketIndex)
+						|| (nextRightBracketIndex != -1
+							&& nextCommaIndex != -1
+							&& nextLeftBracketIndex < nextRightBracketIndex
+							&& nextLeftBracketIndex < nextCommaIndex))) {
 					stackSize++;
 					searchIndex = nextLeftBracketIndex + 1;
 				} else if (nextCommaIndex != -1) {

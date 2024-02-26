@@ -1,7 +1,5 @@
 -cp ../src
 -cp src
--lib mxhx-parser
--lib mxhx-symbols
 -lib mxhx-resolver
 -lib utest
 -D mxhx-disable-experimental-warning

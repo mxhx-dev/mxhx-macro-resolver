@@ -1,0 +1,7 @@
+-cp src
+-cp src-dev
+-lib mxhx-parser
+-lib mxhx-symbols
+-lib mxhx-manifest
+-lib mxhx-resolver
+--main Main

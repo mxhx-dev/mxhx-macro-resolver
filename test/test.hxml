@@ -1,0 +1,10 @@
+-cp ../src
+-cp src
+-lib mxhx-parser
+-lib mxhx-symbols
+-lib mxhx-manifest
+-lib mxhx-resolver
+-lib utest
+-D mxhx-disable-experimental-warning
+--resource mxhx-manifest.xml@mxhx-manifest
+--main Main

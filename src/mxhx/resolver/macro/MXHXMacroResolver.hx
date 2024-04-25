@@ -552,6 +552,10 @@ class MXHXMacroResolver implements IMXHXResolver {
 			var qname = macroTypeToQname(from.t);
 			return resolveQname(qname);
 		});
+		result.to = abstractType.to.map(to -> {
+			var qname = macroTypeToQname(to.t);
+			return resolveQname(qname);
+		});
 		return result;
 	}
 

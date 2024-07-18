@@ -213,6 +213,24 @@ class MXHXMacroResolver implements IMXHXResolver {
 		return result;
 	}
 
+	public function getTypes():Array<IMXHXTypeSymbol> {
+		var result:Map<String, IMXHXTypeSymbol> = [];
+		// the following code resolves only known mappings,
+		// but any class is technically able to be completed,
+		// so this implementation is incomplete
+		for (uri => mappings in manifests) {
+			for (tagName => qname in mappings) {
+				if (!result.exists(qname)) {
+					var symbol = resolveQname(qname);
+					if (symbol != null) {
+						result.set(qname, symbol);
+					}
+				}
+			}
+		}
+		return Lambda.array(result);
+	}
+
 	private function qnameToParams(qname:String, paramsIndex:Int):Array<IMXHXTypeSymbol> {
 		var params:Array<IMXHXTypeSymbol> = null;
 		var paramsString = qname.substring(paramsIndex + 1, qname.length - 1);

@@ -400,7 +400,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 		return qnameType;
 	}
 
-	private function createMXHXFieldSymbolForClassField(classField:ClassField, isStatic:Bool):IMXHXFieldSymbol {
+	private function createMXHXFieldSymbolForClassField(classField:ClassField, isStatic:Bool, owner:IMXHXTypeSymbol):IMXHXFieldSymbol {
 		var resolvedType:IMXHXTypeSymbol = null;
 		var typeQname = macroTypeToQname(classField.type);
 		if (typeQname != null) {
@@ -425,7 +425,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 				};
 			default:
 		}
-		var result = new MXHXFieldSymbol(classField.name, resolvedType, isMethod, classField.isPublic, isStatic);
+		var result = new MXHXFieldSymbol(classField.name, owner, resolvedType, isMethod, classField.isPublic, isStatic);
 		result.isReadable = isReadable;
 		result.isWritable = isWritable;
 		final posInfos = Context.getPosInfos(classField.pos);
@@ -483,7 +483,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 			return cast resolveQname(interfaceQName);
 		});
 		result.params = params != null ? params : [];
-		result.fields = classType.fields.get().map(classField -> createMXHXFieldSymbolForClassField(classField, false));
+		result.fields = classType.fields.get().map(classField -> createMXHXFieldSymbolForClassField(classField, false, result));
 		result.meta = classType.meta.get().map(m -> {
 			var params:Array<String> = null;
 			if (m.params != null) {
@@ -524,7 +524,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 			return cast resolveQname(interfaceQName);
 		});
 		result.params = params != null ? params : [];
-		result.fields = classType.fields.get().map(classField -> createMXHXFieldSymbolForClassField(classField, false));
+		result.fields = classType.fields.get().map(classField -> createMXHXFieldSymbolForClassField(classField, false, result));
 		result.meta = classType.meta.get().map(m -> {
 			var params:Array<String> = null;
 			if (m.params != null) {

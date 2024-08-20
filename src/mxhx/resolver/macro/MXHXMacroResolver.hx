@@ -770,7 +770,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 		return qname;
 	}
 
-	private static function macroTypeToQname(type:Type, includeTypeParameters:Bool = false):String {
+	private static function macroTypeToQname(type:Type):String {
 		var current = type;
 		while (current != null) {
 			switch (current) {
@@ -778,9 +778,6 @@ class MXHXMacroResolver implements IMXHXResolver {
 					var classType = t.get();
 					switch (classType.kind) {
 						case KTypeParameter(constraints):
-							if (includeTypeParameters) {
-								return classType.name;
-							}
 							return null;
 						default:
 					}
@@ -791,7 +788,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 				case TAbstract(t, params):
 					var abstractType = t.get();
 					return MXHXResolverTools.definitionToQname(abstractType.name, abstractType.pack, abstractType.module,
-						params.map(param -> macroTypeToQname(param, includeTypeParameters)));
+						params.map(param -> macroTypeToQname(param)));
 				case TDynamic(t):
 					return "Dynamic<%>";
 				case TFun(args, ret):
@@ -819,26 +816,32 @@ class MXHXMacroResolver implements IMXHXResolver {
 		var argStrings:Array<String> = [];
 		var retString:String = null;
 		var funStack = 1;
+		var paramsStack = 0;
 		var pendingString = "";
 		for (i in 1...qname.length) {
 			var currentChar = qname.charAt(i);
-			if (currentChar == "(") {
+			if (currentChar == "<") {
+				paramsStack++;
+			} else if (currentChar == ">") {
+				paramsStack--;
+			} else if (currentChar == "(") {
 				funStack++;
-			}
-			if (currentChar == ")") {
+			} else if (currentChar == ")") {
 				funStack--;
 				if (funStack == 0) {
-					argStrings.push(StringTools.trim(pendingString));
+					pendingString = StringTools.trim(pendingString);
+					if (pendingString.length > 0) {
+						argStrings.push(pendingString);
+					}
 					retString = StringTools.trim(qname.substr(qname.indexOf(">", i + 1) + 1));
 					break;
 				}
-			}
-			if (currentChar == "," && funStack == 0) {
+			} else if (currentChar == "," && funStack == 1 && paramsStack == 0) {
 				argStrings.push(StringTools.trim(pendingString));
 				pendingString = "";
-			} else {
-				pendingString += currentChar;
+				continue;
 			}
+			pendingString += currentChar;
 		}
 		return {args: argStrings, ret: retString};
 	}

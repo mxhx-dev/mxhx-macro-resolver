@@ -130,7 +130,7 @@ class MXHXMacroResolverTagFieldTypeTest extends Test {
 			</tests:TestPropertiesClass>
 		', 132);
 		Assert.notNull(resolvedFieldType);
-		Assert.equals("haxe.Constraints.Function", resolvedFieldType);
+		Assert.equals("() -> Void", resolvedFieldType);
 	}
 
 	public function testResolveFieldTypeInt():Void {

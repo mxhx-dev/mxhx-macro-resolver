@@ -29,6 +29,7 @@ import mxhx.symbols.IMXHXEnumFieldSymbol;
 import mxhx.symbols.IMXHXEnumSymbol;
 import mxhx.symbols.IMXHXEventSymbol;
 import mxhx.symbols.IMXHXFieldSymbol;
+import mxhx.symbols.IMXHXFunctionTypeSymbol;
 import mxhx.symbols.IMXHXInterfaceSymbol;
 import mxhx.symbols.IMXHXSymbol;
 import mxhx.symbols.IMXHXTypeSymbol;
@@ -40,6 +41,7 @@ import mxhx.symbols.internal.MXHXEnumFieldSymbol;
 import mxhx.symbols.internal.MXHXEnumSymbol;
 import mxhx.symbols.internal.MXHXEventSymbol;
 import mxhx.symbols.internal.MXHXFieldSymbol;
+import mxhx.symbols.internal.MXHXFunctionTypeSymbol;
 import mxhx.symbols.internal.MXHXInterfaceSymbol;
 
 /**
@@ -192,6 +194,8 @@ class MXHXMacroResolver implements IMXHXResolver {
 			case TEnum(t, params):
 				var enumType = t.get();
 				return createMXHXEnumSymbolForEnumType(enumType, qnameParams);
+			case TFun(args, ret):
+				return createMXHXFunctionTypeSymbolFromArgsAndRet(qname, args, ret);
 			default:
 				return null;
 		}
@@ -633,6 +637,14 @@ class MXHXMacroResolver implements IMXHXResolver {
 		return result;
 	}
 
+	private function createMXHXFunctionTypeSymbolFromArgsAndRet(qname:String, args:Array<{name:String, opt:Bool, t:Type}>, ret:Type):IMXHXFunctionTypeSymbol {
+		var retQname = macroTypeToQname(ret);
+		var functionType = new MXHXFunctionTypeSymbol(qname, args.map(arg -> createMXHXArgumentSymbolForFunctionArg(arg)), resolveQname(retQname));
+		functionType.qname = qname;
+		qnameLookup.set(qname, functionType);
+		return functionType;
+	}
+
 	private function hasValidPrefix(tag:IMXHXTagData):Bool {
 		var prefixMap = tag.compositePrefixMap;
 		if (prefixMap == null) {
@@ -735,7 +747,30 @@ class MXHXMacroResolver implements IMXHXResolver {
 		return propertyName;
 	}
 
-	private static function macroTypeToQname(type:Type):String {
+	private static function functionArgsAndRetToQname(args:Array<{name:String, opt:Bool, t:Type}>, ret:Type):String {
+		var qname = '(';
+		for (i in 0...args.length) {
+			var arg = args[i];
+			if (i > 0) {
+				qname += ', ';
+			}
+			if (arg.opt) {
+				qname += '?';
+			}
+			// qname += arg.name;
+			// qname += ':';
+			var argTypeName = macroTypeToQname(arg.t);
+			if (argTypeName == null) {
+				argTypeName = "Dynamic";
+			}
+			qname += argTypeName;
+		}
+		qname += ') -> ';
+		qname += macroTypeToQname(ret);
+		return qname;
+	}
+
+	private static function macroTypeToQname(type:Type, includeTypeParameters:Bool = false):String {
 		var current = type;
 		while (current != null) {
 			switch (current) {
@@ -743,6 +778,9 @@ class MXHXMacroResolver implements IMXHXResolver {
 					var classType = t.get();
 					switch (classType.kind) {
 						case KTypeParameter(constraints):
+							if (includeTypeParameters) {
+								return classType.name;
+							}
 							return null;
 						default:
 					}
@@ -753,11 +791,12 @@ class MXHXMacroResolver implements IMXHXResolver {
 				case TAbstract(t, params):
 					var abstractType = t.get();
 					return MXHXResolverTools.definitionToQname(abstractType.name, abstractType.pack, abstractType.module,
-						params.map(param -> macroTypeToQname(param)));
+						params.map(param -> macroTypeToQname(param, includeTypeParameters)));
 				case TDynamic(t):
 					return "Dynamic<%>";
 				case TFun(args, ret):
-					return "haxe.Constraints.Function";
+					// return "haxe.Constraints.Function";
+					return functionArgsAndRetToQname(args, ret);
 				case TMono(t):
 					current = t.get();
 				case TType(t, params):
@@ -776,7 +815,57 @@ class MXHXMacroResolver implements IMXHXResolver {
 		return null;
 	}
 
+	private static function splitFunctionTypeQname(qname:String):{args:Array<String>, ret:String} {
+		var argStrings:Array<String> = [];
+		var retString:String = null;
+		var funStack = 1;
+		var pendingString = "";
+		for (i in 1...qname.length) {
+			var currentChar = qname.charAt(i);
+			if (currentChar == "(") {
+				funStack++;
+			}
+			if (currentChar == ")") {
+				funStack--;
+				if (funStack == 0) {
+					argStrings.push(StringTools.trim(pendingString));
+					retString = StringTools.trim(qname.substr(qname.indexOf(">", i + 1) + 1));
+					break;
+				}
+			}
+			if (currentChar == "," && funStack == 0) {
+				argStrings.push(StringTools.trim(pendingString));
+				pendingString = "";
+			} else {
+				pendingString += currentChar;
+			}
+		}
+		return {args: argStrings, ret: retString};
+	}
+
 	private static function resolveMacroTypeForQname(qname:String):Type {
+		if (qname.charAt(0) == "(") {
+			var splitResult = splitFunctionTypeQname(qname);
+			var argStrings = splitResult.args;
+			var retString = splitResult.ret;
+			var args = argStrings.map(argString -> {
+				var opt = argString.charAt(0) == "?";
+				var t = argString;
+				if (opt) {
+					t = t.substr(1);
+				}
+				return {
+					opt: opt,
+					name: null,
+					t: t
+				};
+			}).map((arg:{opt:Bool, name:String, t:Dynamic}) -> {
+				arg.t = resolveMacroTypeForQname(arg.t);
+				return arg;
+			});
+			var ret = resolveMacroTypeForQname(retString);
+			return TFun(args, ret);
+		}
 		var paramIndex = qname.indexOf("<");
 		if (paramIndex != -1) {
 			qname = qname.substr(0, paramIndex);

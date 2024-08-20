@@ -64,7 +64,7 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 
 	public function testResolveFunctionSignatureField():Void {
 		var resolved = resolveQnameFieldType("fixtures.TestPropertiesClass", "funcTyped");
-		Assert.equals("haxe.Constraints.Function", resolved);
+		Assert.equals("() -> Void", resolved);
 	}
 
 	public function testResolveIntField():Void {

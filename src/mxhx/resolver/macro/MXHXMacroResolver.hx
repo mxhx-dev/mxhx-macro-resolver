@@ -850,14 +850,19 @@ class MXHXMacroResolver implements IMXHXResolver {
 			var retString = splitResult.ret;
 			var args = argStrings.map(argString -> {
 				var opt = argString.charAt(0) == "?";
-				var t = argString;
 				if (opt) {
-					t = t.substr(1);
+					argString = argString.substr(1);
+				}
+				var argName:String = null;
+				var colonIndex = argString.indexOf(":");
+				if (colonIndex != -1) {
+					argName = argString.substring(0, colonIndex);
+					argString = argString.substring(colonIndex + 1);
 				}
 				return {
 					opt: opt,
-					name: null,
-					t: t
+					name: argName,
+					t: argString
 				};
 			}).map((arg:{opt:Bool, name:String, t:Dynamic}) -> {
 				arg.t = resolveMacroTypeForQname(arg.t);

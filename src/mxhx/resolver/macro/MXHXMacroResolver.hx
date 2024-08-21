@@ -765,8 +765,11 @@ class MXHXMacroResolver implements IMXHXResolver {
 			}
 			qname += argTypeName;
 		}
-		qname += ') -> ';
-		qname += macroTypeToQname(ret);
+		var retName = macroTypeToQname(ret);
+		if (retName == null) {
+			retName = "Dynamic";
+		}
+		qname += ') -> ${retName}';
 		return qname;
 	}
 

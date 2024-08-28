@@ -438,6 +438,11 @@ class MXHXMacroResolver implements IMXHXResolver {
 		switch (classField.kind) {
 			case FMethod(k):
 				isMethod = true;
+				switch (k) {
+					case MethDynamic:
+						isWritable = true;
+					default:
+				}
 			case FVar(read, write):
 				switch (read) {
 					case AccCall, AccNormal:

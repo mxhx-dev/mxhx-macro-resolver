@@ -133,6 +133,22 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 		// TODO: fix the % that should be used only internally
 		Assert.equals("Array<%>", resolved);
 	}
+
+	public function testResolveMethod():Void {
+		var resolved = resolveQnameFieldType("fixtures.TestPropertiesClass", "testMethod");
+		Assert.notNull(resolved);
+		Assert.equals("() -> Void", resolved);
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "testMethod");
+		Assert.isFalse(isWritable);
+	}
+
+	public function testResolveDynamicMethod():Void {
+		var resolved = resolveQnameFieldType("fixtures.TestPropertiesClass", "testDynamicMethod");
+		Assert.notNull(resolved);
+		Assert.equals("() -> Void", resolved);
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "testDynamicMethod");
+		Assert.isTrue(isWritable);
+	}
 	#end
 
 	public static macro function resolveQnameFieldType(qname:String, fieldName:String):haxe.macro.Expr {
@@ -140,5 +156,12 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 		var resolvedClass:IMXHXClassSymbol = cast resolver.resolveQname(qname);
 		var field = Lambda.find(resolvedClass.fields, field -> field.name == fieldName);
 		return macro $v{resolver.resolveQname(field.type.qname).qname};
+	}
+
+	public static macro function isFieldWritable(qname:String, fieldName:String):haxe.macro.Expr {
+		var resolver = new MXHXMacroResolver();
+		var resolvedClass:IMXHXClassSymbol = cast resolver.resolveQname(qname);
+		var field = Lambda.find(resolvedClass.fields, field -> field.name == fieldName);
+		return macro $v{field.isWritable};
 	}
 }

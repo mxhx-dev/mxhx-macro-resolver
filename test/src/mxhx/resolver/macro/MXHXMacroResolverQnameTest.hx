@@ -90,6 +90,18 @@ class MXHXMacroResolverQnameTest extends Test {
 		Assert.notNull(resolved);
 		Assert.equals("fixtures.ITestPropertiesInterface", resolved);
 	}
+
+	public function testResolveAbstract():Void {
+		var resolved = resolveQname("fixtures.TestAbstractFrom");
+		Assert.notNull(resolved);
+		Assert.equals("fixtures.TestAbstractFrom", resolved);
+	}
+
+	public function testResolveAbstractFromModuleType():Void {
+		var resolved = resolveQname("fixtures.TestAbstractFromModuleType");
+		Assert.notNull(resolved);
+		Assert.equals("fixtures.TestAbstractFromModuleType", resolved);
+	}
 	#end
 
 	public static macro function resolveQname(qname:String):haxe.macro.Expr {

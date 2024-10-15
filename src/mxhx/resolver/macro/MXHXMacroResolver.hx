@@ -23,6 +23,7 @@ import haxe.macro.Type;
 import mxhx.resolver.IMXHXResolver;
 import mxhx.resolver.MXHXResolvers;
 import mxhx.symbols.IMXHXAbstractSymbol;
+import mxhx.symbols.IMXHXAbstractToOrFromInfo;
 import mxhx.symbols.IMXHXArgumentSymbol;
 import mxhx.symbols.IMXHXClassSymbol;
 import mxhx.symbols.IMXHXEnumFieldSymbol;
@@ -35,6 +36,7 @@ import mxhx.symbols.IMXHXSymbol;
 import mxhx.symbols.IMXHXTypeSymbol;
 import mxhx.symbols.MXHXSymbolTools;
 import mxhx.symbols.internal.MXHXAbstractSymbol;
+import mxhx.symbols.internal.MXHXAbstractToOrFromInfo;
 import mxhx.symbols.internal.MXHXArgumentSymbol;
 import mxhx.symbols.internal.MXHXClassSymbol;
 import mxhx.symbols.internal.MXHXEnumFieldSymbol;
@@ -597,13 +599,29 @@ class MXHXMacroResolver implements IMXHXResolver {
 		result.params = params != null ? params : [];
 		var typeQname = macroTypeToQname(abstractType.type);
 		result.type = resolveQname(typeQname);
-		result.from = abstractType.from.map(from -> {
+
+		if (abstractType.impl != null) {
+			result.impl = createMXHXClassSymbolForClassType(abstractType.impl.get(), []);
+		}
+
+		result.from = abstractType.from.map(function(from):IMXHXAbstractToOrFromInfo {
 			var qname = macroTypeToQname(from.t);
-			return resolveQname(qname);
+			var resolvedType = resolveQname(qname);
+			var resolvedField:IMXHXFieldSymbol = null;
+			if (result.impl != null) {
+				resolvedField = Lambda.find(result.impl.fields, fieldSymbol -> fieldSymbol.isStatic && fieldSymbol.name == from.field.name);
+			}
+			return new MXHXAbstractToOrFromInfo(resolvedField, resolvedType);
 		});
-		result.to = abstractType.to.map(to -> {
+
+		result.to = abstractType.to.map(function(to):IMXHXAbstractToOrFromInfo {
 			var qname = macroTypeToQname(to.t);
-			return resolveQname(qname);
+			var resolvedType = resolveQname(qname);
+			var resolvedField:IMXHXFieldSymbol = null;
+			if (result.impl != null) {
+				resolvedField = Lambda.find(result.impl.fields, fieldSymbol -> fieldSymbol.isStatic && fieldSymbol.name == to.field.name);
+			}
+			return new MXHXAbstractToOrFromInfo(resolvedField, resolvedType);
 		});
 		return result;
 	}

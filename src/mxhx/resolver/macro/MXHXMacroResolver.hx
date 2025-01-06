@@ -63,6 +63,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 
 	private var manifests:Map<String, Map<String, String>> = [];
 	private var qnameLookup:Map<String, IMXHXTypeSymbol> = [];
+	private var pendingQnameLookup:Map<String, IMXHXTypeSymbol> = [];
 
 	/**
 		Registers the classes available in a particular MXHX namespace.
@@ -134,6 +135,23 @@ class MXHXMacroResolver implements IMXHXResolver {
 		Resolves a type from its fully-qualified name.
 	**/
 	public function resolveQname(qname:String):IMXHXTypeSymbol {
+		if (qname == null) {
+			return null;
+		}
+		var result = resolveQnameInternal(qname);
+		// resolveQname() can be called recursively, if the Haxe compiler
+		// decides that it needs to run another build macro before this method
+		// returns. we don't want to return any symbols that are not yet
+		// completely populated, so this fills in anything that wasn't completed
+		// yet, at the potential cost of doing some work more than once.
+		for (key => value in pendingQnameLookup) {
+			qnameLookup.remove(key);
+			resolveQnameInternal(key);
+		}
+		return result;
+	}
+
+	private function resolveQnameInternal(qname:String):IMXHXTypeSymbol {
 		if (qname == null) {
 			return null;
 		}
@@ -253,7 +271,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 					if (paramsStack == 0) {
 						var pendingString = StringTools.trim(qname.substring(pendingStringStart, i));
 						if (pendingString.length > 0) {
-							params.push(resolveQname(pendingString));
+							params.push(resolveQnameInternal(pendingString));
 						}
 						break;
 					}
@@ -267,7 +285,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 				funRetPending = true;
 			} else if (currentChar == "," && funArgsStack == 0 && paramsStack == 1) {
 				var pendingString = StringTools.trim(qname.substring(pendingStringStart, i));
-				params.push(resolveQname(pendingString));
+				params.push(resolveQnameInternal(pendingString));
 				pendingStringStart = i + 1;
 				continue;
 			}
@@ -387,16 +405,16 @@ class MXHXMacroResolver implements IMXHXResolver {
 							case TInst(t, params): t.get();
 							default: null;
 						}
-						var itemType:IMXHXTypeSymbol = resolveQname(typeAttr.rawValue);
+						var itemType:IMXHXTypeSymbol = resolveQnameInternal(typeAttr.rawValue);
 						if (tagData.stateName != null) {
 							return null;
 						}
 
 						var qname = MXHXResolverTools.definitionToQname(arrayClassType.name, arrayClassType.pack, arrayClassType.module, [itemType.qname]);
-						return resolveQname(qname);
+						return resolveQnameInternal(qname);
 					}
 				}
-				var type = resolveQname(qname);
+				var type = resolveQnameInternal(qname);
 				if (type != null) {
 					if ((type is IMXHXEnumSymbol)) {
 						var enumSymbol:IMXHXEnumSymbol = cast type;
@@ -421,6 +439,8 @@ class MXHXMacroResolver implements IMXHXResolver {
 			return null;
 		}
 		var qname = uri.substr(0, uri.length - 1) + localName;
+		// purposefully using resolveQname() instead of resolveQnameInternal()
+		// here to enure that all pending qname symbols are populated.
 		var qnameType = resolveQname(qname);
 		if (qnameType == null) {
 			return null;
@@ -432,7 +452,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 		var resolvedType:IMXHXTypeSymbol = null;
 		var typeQname = macroTypeToQname(classField.type);
 		if (typeQname != null) {
-			resolvedType = resolveQname(typeQname);
+			resolvedType = resolveQnameInternal(typeQname);
 		}
 		var isMethod = false;
 		var isReadable = false;
@@ -491,20 +511,28 @@ class MXHXMacroResolver implements IMXHXResolver {
 
 	private function createMXHXArgumentSymbolForFunctionArg(functionArg:{name:String, opt:Bool, t:Type}):IMXHXArgumentSymbol {
 		var qname = macroTypeToQname(functionArg.t);
-		var resolvedType = resolveQname(qname);
+		var resolvedType = resolveQnameInternal(qname);
 		return new MXHXArgumentSymbol(functionArg.name, resolvedType, functionArg.opt);
 	}
 
 	private function createMXHXInterfaceSymbolForClassType(classType:ClassType, params:Array<IMXHXTypeSymbol>):IMXHXInterfaceSymbol {
 		var qname = MXHXResolverTools.definitionToQname(classType.name, classType.pack, classType.module,
 			params != null ? params.map(param -> param != null ? param.qname : null) : null);
-		var result = new MXHXInterfaceSymbol(classType.name, classType.pack.copy());
-		result.qname = qname;
-		result.module = classType.module;
-		final posInfos = Context.getPosInfos(classType.pos);
-		result.file = posInfos.file;
-		result.offsets = {start: posInfos.min, end: posInfos.max};
-		result.isPrivate = classType.isPrivate;
+		var result:MXHXInterfaceSymbol = null;
+		if (pendingQnameLookup.exists(qname)) {
+			// may be called recursively before the symbol is completely
+			// populated, so continue with the existing symbol.
+			result = cast pendingQnameLookup.get(qname);
+		} else {
+			result = new MXHXInterfaceSymbol(classType.name, classType.pack.copy());
+			result.qname = qname;
+			result.module = classType.module;
+			final posInfos = Context.getPosInfos(classType.pos);
+			result.file = posInfos.file;
+			result.offsets = {start: posInfos.min, end: posInfos.max};
+			result.isPrivate = classType.isPrivate;
+			pendingQnameLookup.set(qname, result);
+		}
 		// fields may reference this type, so make sure that it's available
 		// before parsing anything else
 		qnameLookup.set(qname, result);
@@ -513,7 +541,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 			var interfaceType = i.t.get();
 			var interfaceQName = MXHXResolverTools.definitionToQname(interfaceType.name, interfaceType.pack, interfaceType.module,
 				i.params.map(param -> macroTypeToQname(param)));
-			return cast resolveQname(interfaceQName);
+			return cast resolveQnameInternal(interfaceQName);
 		});
 		result.params = params != null ? params : [];
 		result.fields = classType.fields.get().map(classField -> createMXHXFieldSymbolForClassField(classField, false, result));
@@ -525,19 +553,29 @@ class MXHXMacroResolver implements IMXHXResolver {
 			return {name: m.name, params: params};
 		});
 
+		pendingQnameLookup.remove(qname);
 		return result;
 	}
 
 	private function createMXHXClassSymbolForClassType(classType:ClassType, params:Array<IMXHXTypeSymbol>):IMXHXClassSymbol {
 		var qname = MXHXResolverTools.definitionToQname(classType.name, classType.pack, classType.module,
 			params != null ? params.map(param -> param != null ? param.qname : null) : null);
-		var result = new MXHXClassSymbol(classType.name, classType.pack.copy());
-		result.qname = qname;
-		result.module = classType.module;
-		final posInfos = Context.getPosInfos(classType.pos);
-		result.file = posInfos.file;
-		result.offsets = {start: posInfos.min, end: posInfos.max};
-		result.isPrivate = classType.isPrivate;
+
+		var result:MXHXClassSymbol = null;
+		if (pendingQnameLookup.exists(qname)) {
+			// may be called recursively before the symbol is completely
+			// populated, so continue with the existing symbol.
+			result = cast pendingQnameLookup.get(qname);
+		} else {
+			result = new MXHXClassSymbol(classType.name, classType.pack.copy());
+			result.qname = qname;
+			result.module = classType.module;
+			final posInfos = Context.getPosInfos(classType.pos);
+			result.file = posInfos.file;
+			result.offsets = {start: posInfos.min, end: posInfos.max};
+			result.isPrivate = classType.isPrivate;
+			pendingQnameLookup.set(qname, result);
+		}
 		// fields may reference this type, so make sure that it's available
 		// before parsing anything else
 		qnameLookup.set(qname, result);
@@ -547,14 +585,14 @@ class MXHXMacroResolver implements IMXHXResolver {
 			var superClass = classType.superClass.t.get();
 			var superClassQName = MXHXResolverTools.definitionToQname(superClass.name, superClass.pack, superClass.module,
 				classType.superClass.params.map(param -> macroTypeToQname(param)));
-			resolvedSuperClass = cast resolveQname(superClassQName);
+			resolvedSuperClass = cast resolveQnameInternal(superClassQName);
 		}
 		result.superClass = resolvedSuperClass;
 		result.interfaces = classType.interfaces.map(i -> {
 			var interfaceType = i.t.get();
 			var interfaceQName = MXHXResolverTools.definitionToQname(interfaceType.name, interfaceType.pack, interfaceType.module,
 				i.params.map(param -> macroTypeToQname(param)));
-			return cast resolveQname(interfaceQName);
+			return cast resolveQnameInternal(interfaceQName);
 		});
 		result.params = params != null ? params : [];
 		result.fields = classType.fields.get().map(classField -> createMXHXFieldSymbolForClassField(classField, false, result));
@@ -574,31 +612,41 @@ class MXHXMacroResolver implements IMXHXResolver {
 				return null;
 			}
 			var eventTypeQname = getEventType(eventMeta);
-			var resolvedType:IMXHXClassSymbol = cast resolveQname(eventTypeQname);
+			var resolvedType:IMXHXClassSymbol = cast resolveQnameInternal(eventTypeQname);
 			var result:IMXHXEventSymbol = new MXHXEventSymbol(eventName, resolvedType);
 			return result;
 		}).filter(eventSymbol -> eventSymbol != null);
 		result.defaultProperty = getDefaultProperty(classType);
+
+		pendingQnameLookup.remove(qname);
 		return result;
 	}
 
 	private function createMXHXAbstractSymbolForAbstractType(abstractType:AbstractType, params:Array<IMXHXTypeSymbol>):IMXHXAbstractSymbol {
 		var qname = MXHXResolverTools.definitionToQname(abstractType.name, abstractType.pack, abstractType.module,
 			params != null ? params.map(param -> param != null ? param.qname : null) : null);
-		var result = new MXHXAbstractSymbol(abstractType.name, abstractType.pack.copy());
-		result.qname = qname;
-		result.module = abstractType.module;
-		final posInfos = Context.getPosInfos(abstractType.pos);
-		result.file = posInfos.file;
-		result.offsets = {start: posInfos.min, end: posInfos.max};
-		result.isPrivate = abstractType.isPrivate;
+		var result:MXHXAbstractSymbol = null;
+		if (pendingQnameLookup.exists(qname)) {
+			// may be called recursively before the symbol is completely
+			// populated, so continue with the existing symbol.
+			result = cast pendingQnameLookup.get(qname);
+		} else {
+			result = new MXHXAbstractSymbol(abstractType.name, abstractType.pack.copy());
+			result.qname = qname;
+			result.module = abstractType.module;
+			final posInfos = Context.getPosInfos(abstractType.pos);
+			result.file = posInfos.file;
+			result.offsets = {start: posInfos.min, end: posInfos.max};
+			result.isPrivate = abstractType.isPrivate;
+			pendingQnameLookup.set(qname, result);
+		}
 		// fields may reference this type, so make sure that it's available
 		// before parsing anything else
 		qnameLookup.set(qname, result);
 
 		result.params = params != null ? params : [];
 		var typeQname = macroTypeToQname(abstractType.type);
-		result.type = resolveQname(typeQname);
+		result.type = resolveQnameInternal(typeQname);
 
 		if (abstractType.impl != null) {
 			result.impl = createMXHXClassSymbolForClassType(abstractType.impl.get(), []);
@@ -606,7 +654,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 
 		result.from = abstractType.from.map(function(from):IMXHXAbstractToOrFromInfo {
 			var qname = macroTypeToQname(from.t);
-			var resolvedType = resolveQname(qname);
+			var resolvedType = resolveQnameInternal(qname);
 			var resolvedField:IMXHXFieldSymbol = null;
 			if (result.impl != null) {
 				resolvedField = Lambda.find(result.impl.fields, fieldSymbol -> fieldSymbol.isStatic && fieldSymbol.name == from.field.name);
@@ -616,26 +664,36 @@ class MXHXMacroResolver implements IMXHXResolver {
 
 		result.to = abstractType.to.map(function(to):IMXHXAbstractToOrFromInfo {
 			var qname = macroTypeToQname(to.t);
-			var resolvedType = resolveQname(qname);
+			var resolvedType = resolveQnameInternal(qname);
 			var resolvedField:IMXHXFieldSymbol = null;
 			if (result.impl != null) {
 				resolvedField = Lambda.find(result.impl.fields, fieldSymbol -> fieldSymbol.isStatic && fieldSymbol.name == to.field.name);
 			}
 			return new MXHXAbstractToOrFromInfo(resolvedField, resolvedType);
 		});
+
+		pendingQnameLookup.remove(qname);
 		return result;
 	}
 
 	private function createMXHXEnumSymbolForAbstractEnumType(abstractType:AbstractType, params:Array<IMXHXTypeSymbol>):IMXHXEnumSymbol {
 		var qname = MXHXResolverTools.definitionToQname(abstractType.name, abstractType.pack, abstractType.module,
 			params != null ? params.map(param -> param != null ? param.qname : null) : null);
-		var result = new MXHXEnumSymbol(abstractType.name, abstractType.pack.copy());
-		result.qname = qname;
-		result.module = abstractType.module;
-		final posInfos = Context.getPosInfos(abstractType.pos);
-		result.file = posInfos.file;
-		result.offsets = {start: posInfos.min, end: posInfos.max};
-		result.isPrivate = abstractType.isPrivate;
+		var result:MXHXEnumSymbol = null;
+		if (pendingQnameLookup.exists(qname)) {
+			// may be called recursively before the symbol is completely
+			// populated, so continue with the existing symbol.
+			result = cast pendingQnameLookup.get(qname);
+		} else {
+			result = new MXHXEnumSymbol(abstractType.name, abstractType.pack.copy());
+			result.qname = qname;
+			result.module = abstractType.module;
+			final posInfos = Context.getPosInfos(abstractType.pos);
+			result.file = posInfos.file;
+			result.offsets = {start: posInfos.min, end: posInfos.max};
+			result.isPrivate = abstractType.isPrivate;
+			pendingQnameLookup.set(qname, result);
+		}
 		// fields may reference this type, so make sure that it's available
 		// before parsing anything else
 		qnameLookup.set(qname, result);
@@ -649,19 +707,29 @@ class MXHXMacroResolver implements IMXHXResolver {
 			}
 			return {name: m.name, params: params};
 		});
+
+		pendingQnameLookup.remove(qname);
 		return result;
 	}
 
 	private function createMXHXEnumSymbolForEnumType(enumType:EnumType, params:Array<IMXHXTypeSymbol>):IMXHXEnumSymbol {
 		var qname = MXHXResolverTools.definitionToQname(enumType.name, enumType.pack, enumType.module,
 			params != null ? params.map(param -> param != null ? param.qname : null) : null);
-		var result = new MXHXEnumSymbol(enumType.name, enumType.pack.copy());
-		result.qname = qname;
-		result.module = enumType.module;
-		final posInfos = Context.getPosInfos(enumType.pos);
-		result.file = posInfos.file;
-		result.offsets = {start: posInfos.min, end: posInfos.max};
-		result.isPrivate = enumType.isPrivate;
+		var result:MXHXEnumSymbol = null;
+		if (pendingQnameLookup.exists(qname)) {
+			// may be called recursively before the symbol is completely
+			// populated, so continue with the existing symbol.
+			result = cast pendingQnameLookup.get(qname);
+		} else {
+			result = new MXHXEnumSymbol(enumType.name, enumType.pack.copy());
+			result.qname = qname;
+			result.module = enumType.module;
+			final posInfos = Context.getPosInfos(enumType.pos);
+			result.file = posInfos.file;
+			result.offsets = {start: posInfos.min, end: posInfos.max};
+			result.isPrivate = enumType.isPrivate;
+			pendingQnameLookup.set(qname, result);
+		}
 		// fields may reference this type, so make sure that it's available
 		// before parsing anything else
 		qnameLookup.set(qname, result);
@@ -679,12 +747,16 @@ class MXHXMacroResolver implements IMXHXResolver {
 			}
 			return {name: m.name, params: params};
 		});
+
+		pendingQnameLookup.remove(qname);
 		return result;
 	}
 
 	private function createMXHXFunctionTypeSymbolFromArgsAndRet(qname:String, args:Array<{name:String, opt:Bool, t:Type}>, ret:Type):IMXHXFunctionTypeSymbol {
 		var retQname = macroTypeToQname(ret);
-		var functionType = new MXHXFunctionTypeSymbol(qname, args.map(arg -> createMXHXArgumentSymbolForFunctionArg(arg)), resolveQname(retQname));
+		var argSymbols = args.map(arg -> createMXHXArgumentSymbolForFunctionArg(arg));
+		var retSymbol = resolveQnameInternal(retQname);
+		var functionType = new MXHXFunctionTypeSymbol(qname, argSymbols, retSymbol);
 		functionType.qname = qname;
 		qnameLookup.set(qname, functionType);
 		return functionType;

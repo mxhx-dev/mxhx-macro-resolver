@@ -411,10 +411,10 @@ class MXHXMacroResolver implements IMXHXResolver {
 						}
 
 						var qname = MXHXResolverTools.definitionToQname(arrayClassType.name, arrayClassType.pack, arrayClassType.module, [itemType.qname]);
-						return resolveQnameInternal(qname);
+						return resolveQname(qname);
 					}
 				}
-				var type = resolveQnameInternal(qname);
+				var type = resolveQname(qname);
 				if (type != null) {
 					if ((type is IMXHXEnumSymbol)) {
 						var enumSymbol:IMXHXEnumSymbol = cast type;

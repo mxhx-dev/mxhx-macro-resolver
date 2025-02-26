@@ -13,11 +13,21 @@ class MXHXMacroResolverQnameTest extends Test {
 		Assert.equals("Any", resolved);
 	}
 
-	public function testResolveArray():Void {
+	public function testResolveArrayWithoutTypeParameter():Void {
 		var resolved = resolveQname("Array");
 		Assert.notNull(resolved);
 		Assert.equals("Array", resolved);
 		var paramNames = resolveParamNames("Array");
+		Assert.notNull(paramNames);
+		Assert.equals(1, paramNames.length);
+		Assert.equals("T", paramNames[0]);
+	}
+
+	public function testResolveArrayWithTypeParameter():Void {
+		var resolved = resolveQname("Array<Float>");
+		Assert.notNull(resolved);
+		Assert.equals("Array<Float>", resolved);
+		var paramNames = resolveParamNames("Array<Float>");
 		Assert.notNull(paramNames);
 		Assert.equals(1, paramNames.length);
 		Assert.equals("T", paramNames[0]);
@@ -107,11 +117,21 @@ class MXHXMacroResolverQnameTest extends Test {
 		Assert.equals("fixtures.TestAbstractFromModuleType", resolved);
 	}
 
-	public function testResolveParamNames():Void {
+	public function testResolveGenericWithoutParams():Void {
 		var resolved = resolveQname("fixtures.ArrayCollection");
 		Assert.notNull(resolved);
 		Assert.equals("fixtures.ArrayCollection", resolved);
 		var paramNames = resolveParamNames("fixtures.ArrayCollection");
+		Assert.notNull(paramNames);
+		Assert.equals(1, paramNames.length);
+		Assert.equals("T", paramNames[0]);
+	}
+
+	public function testResolveGenericWithParams():Void {
+		var resolved = resolveQname("fixtures.ArrayCollection<Float>");
+		Assert.notNull(resolved);
+		Assert.equals("fixtures.ArrayCollection<Float>", resolved);
+		var paramNames = resolveParamNames("fixtures.ArrayCollection<Float>");
 		Assert.notNull(paramNames);
 		Assert.equals(1, paramNames.length);
 		Assert.equals("T", paramNames[0]);

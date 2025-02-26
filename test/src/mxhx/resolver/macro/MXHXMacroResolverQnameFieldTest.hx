@@ -128,10 +128,32 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 	}
 
 	public function testResolveFieldWithTypeParameter():Void {
-		var resolved = resolveQnameFieldType("fixtures.ArrayCollection", "array");
-		Assert.notNull(resolved);
+		var resolvedArrayField = resolveQnameFieldType("fixtures.ArrayCollection", "array");
+		Assert.notNull(resolvedArrayField);
 		// TODO: fix the % that should be used only internally
-		Assert.equals("Array<%>", resolved);
+		Assert.equals("Array<%>", resolvedArrayField);
+
+		var resolvedGetField = resolveQnameFieldType("fixtures.ArrayCollection", "get");
+		Assert.notNull(resolvedGetField);
+		Assert.equals("(Int) -> Dynamic", resolvedGetField);
+
+		var resolvedSetField = resolveQnameFieldType("fixtures.ArrayCollection", "set");
+		Assert.notNull(resolvedSetField);
+		Assert.equals("(Int, Dynamic) -> Void", resolvedSetField);
+	}
+
+	public function testResolveFieldsWithInheritedTypeParameter():Void {
+		var resolvedArrayField = resolveQnameFieldType("fixtures.ArrayCollection<Float>", "array");
+		Assert.notNull(resolvedArrayField);
+		Assert.equals("Array<Float>", resolvedArrayField);
+
+		var resolvedGetField = resolveQnameFieldType("fixtures.ArrayCollection<Float>", "get");
+		Assert.notNull(resolvedGetField);
+		Assert.equals("(Int) -> Float", resolvedGetField);
+
+		var resolvedSetField = resolveQnameFieldType("fixtures.ArrayCollection<Float>", "set");
+		Assert.notNull(resolvedSetField);
+		Assert.equals("(Int, Float) -> Void", resolvedSetField);
 	}
 
 	public function testResolveMethod():Void {

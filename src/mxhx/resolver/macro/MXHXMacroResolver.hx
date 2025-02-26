@@ -49,8 +49,6 @@ import mxhx.symbols.internal.MXHXInterfaceSymbol;
 
 class MXHXMacroResolver implements IMXHXResolver {
 	private static final MODULE_STD_TYPES = "StdTypes";
-	private static final TYPE_ARRAY = "Array";
-	private static final ATTRIBUTE_TYPE = "type";
 	private static final META_DEFAULT_XML_PROPERTY = "defaultXmlProperty";
 	private static final META_ENUM = ":enum";
 

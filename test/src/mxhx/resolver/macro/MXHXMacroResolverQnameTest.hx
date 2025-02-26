@@ -17,6 +17,10 @@ class MXHXMacroResolverQnameTest extends Test {
 		var resolved = resolveQname("Array");
 		Assert.notNull(resolved);
 		Assert.equals("Array", resolved);
+		var paramNames = resolveParamNames("Array");
+		Assert.notNull(paramNames);
+		Assert.equals(1, paramNames.length);
+		Assert.equals("T", paramNames[0]);
 	}
 
 	public function testResolveBool():Void {
@@ -102,10 +106,25 @@ class MXHXMacroResolverQnameTest extends Test {
 		Assert.notNull(resolved);
 		Assert.equals("fixtures.TestAbstractFromModuleType", resolved);
 	}
+
+	public function testResolveParamNames():Void {
+		var resolved = resolveQname("fixtures.ArrayCollection");
+		Assert.notNull(resolved);
+		Assert.equals("fixtures.ArrayCollection", resolved);
+		var paramNames = resolveParamNames("fixtures.ArrayCollection");
+		Assert.notNull(paramNames);
+		Assert.equals(1, paramNames.length);
+		Assert.equals("T", paramNames[0]);
+	}
 	#end
 
 	public static macro function resolveQname(qname:String):haxe.macro.Expr {
 		var resolver = new MXHXMacroResolver();
 		return macro $v{resolver.resolveQname(qname).qname};
+	}
+
+	public static macro function resolveParamNames(qname:String):haxe.macro.Expr {
+		var resolver = new MXHXMacroResolver();
+		return macro $v{resolver.resolveQname(qname).paramNames};
 	}
 }

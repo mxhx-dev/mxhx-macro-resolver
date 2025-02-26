@@ -555,6 +555,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 			return cast resolveQnameInternal(interfaceQName);
 		});
 		result.params = params != null ? params : [];
+		result.paramNames = classType.params.map(typeParam -> typeParam.name);
 		result.fields = classType.fields.get().map(classField -> createMXHXFieldSymbolForClassField(classField, false, result));
 		result.meta = classType.meta.get().map(m -> {
 			var params:Array<String> = null;
@@ -606,6 +607,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 			return cast resolveQnameInternal(interfaceQName);
 		});
 		result.params = params != null ? params : [];
+		result.paramNames = classType.params.map(typeParam -> typeParam.name);
 		result.fields = classType.fields.get().map(classField -> createMXHXFieldSymbolForClassField(classField, false, result));
 		result.meta = classType.meta.get().map(m -> {
 			var params:Array<String> = null;
@@ -656,6 +658,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 		qnameLookup.set(qname, result);
 
 		result.params = params != null ? params : [];
+		result.paramNames = abstractType.params.map(typeParam -> typeParam.name);
 		var typeQname = macroTypeToQname(abstractType.type);
 		result.type = resolveQnameInternal(typeQname);
 
@@ -710,6 +713,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 		qnameLookup.set(qname, result);
 
 		result.params = params != null ? params : [];
+		result.paramNames = abstractType.params.map(typeParam -> typeParam.name);
 		result.fields = abstractType.impl.get().statics.get().map(field -> createMXHXEnumFieldSymbolForAbstractField(field, result));
 		result.meta = abstractType.meta.get().map(m -> {
 			var params:Array<String> = null;
@@ -746,6 +750,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 		qnameLookup.set(qname, result);
 
 		result.params = params != null ? params : [];
+		result.paramNames = enumType.params.map(typeParam -> typeParam.name);
 		var fields:Array<IMXHXEnumFieldSymbol> = [];
 		for (key => value in enumType.constructs) {
 			fields.push(createMXHXEnumFieldSymbolForEnumField(value, result));

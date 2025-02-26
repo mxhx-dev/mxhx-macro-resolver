@@ -20,6 +20,7 @@ import haxe.macro.Expr.Error;
 import haxe.macro.Expr.MetadataEntry;
 import haxe.macro.ExprTools;
 import haxe.macro.Type;
+import mxhx.manifest.MXHXManifestEntry;
 import mxhx.resolver.IMXHXResolver;
 import mxhx.resolver.MXHXResolvers;
 import mxhx.symbols.IMXHXAbstractSymbol;
@@ -61,14 +62,14 @@ class MXHXMacroResolver implements IMXHXResolver {
 		manifests = MXHXResolvers.getMappings();
 	}
 
-	private var manifests:Map<String, Map<String, String>> = [];
+	private var manifests:Map<String, Map<String, MXHXManifestEntry>> = [];
 	private var qnameLookup:Map<String, IMXHXTypeSymbol> = [];
 	private var pendingQnameLookup:Map<String, IMXHXTypeSymbol> = [];
 
 	/**
 		Registers the classes available in a particular MXHX namespace.
 	**/
-	public function registerManifest(uri:String, mappings:Map<String, String>):Void {
+	public function registerManifest(uri:String, mappings:Map<String, MXHXManifestEntry>):Void {
 		manifests.set(uri, mappings);
 	}
 
@@ -228,13 +229,32 @@ class MXHXMacroResolver implements IMXHXResolver {
 	public function getTagNamesForQname(qnameToFind:String):Map<String, String> {
 		var result:Map<String, String> = [];
 		for (uri => mappings in manifests) {
-			for (tagName => qname in mappings) {
-				if (qname == qnameToFind) {
+			for (tagName => manifestEntry in mappings) {
+				if (manifestEntry.qname == qnameToFind) {
 					result.set(uri, tagName);
 				}
 			}
 		}
 		return result;
+	}
+
+	public function getParamsForQname(qnameToFind:String):Array<String> {
+		var index = qnameToFind.indexOf("<");
+		if (index != -1) {
+			qnameToFind = qnameToFind.substr(0, index);
+		}
+		for (uri => mappings in manifests) {
+			for (tagName => manifestEntry in mappings) {
+				if (manifestEntry.qname == qnameToFind) {
+					var params = manifestEntry.params;
+					if (params == null) {
+						return [];
+					}
+					return params.copy();
+				}
+			}
+		}
+		return [];
 	}
 
 	public function getTypes():Array<IMXHXTypeSymbol> {
@@ -243,7 +263,8 @@ class MXHXMacroResolver implements IMXHXResolver {
 		// but any class is technically able to be completed,
 		// so this implementation is incomplete
 		for (uri => mappings in manifests) {
-			for (tagName => qname in mappings) {
+			for (tagName => manifestEntry in mappings) {
+				var qname = manifestEntry.qname;
 				if (!result.exists(qname)) {
 					var symbol = resolveQname(qname);
 					if (symbol != null) {
@@ -368,7 +389,8 @@ class MXHXMacroResolver implements IMXHXResolver {
 		if (uri != null && manifests.exists(uri)) {
 			var mappings = manifests.get(uri);
 			if (mappings.exists(localName)) {
-				var qname = mappings.get(localName);
+				var manifestEntry = mappings.get(localName);
+				var qname = manifestEntry.qname;
 				var qnameMacroType = resolveMacroTypeForQname(qname);
 				var discoveredParams:Array<Type> = null;
 				if (qnameMacroType != null) {
@@ -381,6 +403,33 @@ class MXHXMacroResolver implements IMXHXResolver {
 							discoveredParams = params;
 						default:
 					}
+				}
+				var paramNames = getParamsForQname(qname);
+				if (paramNames.length > 0) {
+					var paramQnames:Array<String> = paramNames.map(paramName -> {
+						var paramNameAttr = tagData.getAttributeData(paramName);
+						if (paramNameAttr == null) {
+							return null;
+						}
+						var itemType:IMXHXTypeSymbol = resolveQnameInternal(paramNameAttr.rawValue);
+						if (tagData.stateName != null) {
+							return null;
+						}
+						return itemType.qname;
+					});
+					qname += "<";
+					for (i in 0...paramQnames.length) {
+						if (i > 0) {
+							qname += ",";
+						}
+						var paramQname = paramQnames[i];
+						if (paramQname == null) {
+							paramQname = "%";
+						}
+						qname += paramQname;
+					}
+					qname += ">";
+					return resolveQname(qname);
 				}
 				if (discoveredParams != null && discoveredParams.length > 0) {
 					qname += "<";
@@ -396,23 +445,6 @@ class MXHXMacroResolver implements IMXHXResolver {
 						qname += paramQname;
 					}
 					qname += ">";
-				}
-				if (localName == TYPE_ARRAY) {
-					var typeAttr = tagData.getAttributeData(ATTRIBUTE_TYPE);
-					if (typeAttr != null) {
-						var arrayType = Context.getType(localName);
-						var arrayClassType = switch (arrayType) {
-							case TInst(t, params): t.get();
-							default: null;
-						}
-						var itemType:IMXHXTypeSymbol = resolveQnameInternal(typeAttr.rawValue);
-						if (tagData.stateName != null) {
-							return null;
-						}
-
-						var qname = MXHXResolverTools.definitionToQname(arrayClassType.name, arrayClassType.pack, arrayClassType.module, [itemType.qname]);
-						return resolveQname(qname);
-					}
 				}
 				var type = resolveQname(qname);
 				if (type != null) {
@@ -584,7 +616,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 		if (classType.superClass != null) {
 			var superClass = classType.superClass.t.get();
 			var superClassQName = MXHXResolverTools.definitionToQname(superClass.name, superClass.pack, superClass.module,
-				classType.superClass.params.map(param -> macroTypeToQname(param)));
+				superClass.params.map(param -> macroTypeToQname(param.t)));
 			resolvedSuperClass = cast resolveQnameInternal(superClassQName);
 		}
 		result.superClass = resolvedSuperClass;

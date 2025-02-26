@@ -1,9 +1,10 @@
 package mxhx.resolver.macro;
 
+import mxhx.manifest.MXHXManifestEntry;
 import mxhx.parser.MXHXParser;
+import mxhx.resolver.macro.MXHXMacroResolver;
 import mxhx.symbols.IMXHXFieldSymbol;
 import mxhx.symbols.IMXHXTypeSymbol;
-import mxhx.resolver.macro.MXHXMacroResolver;
 import utest.Test;
 #if !macro
 import utest.Assert;
@@ -288,11 +289,11 @@ class MXHXMacroResolverTagFieldValueTypeTest extends Test {
 		var manifestPath = haxe.io.Path.join([Sys.getCwd(), "mxhx-manifest.xml"]);
 		var content = sys.io.File.getContent(manifestPath);
 		var xml = Xml.parse(content);
-		var mappings:Map<String, String> = [];
+		var mappings:Map<String, MXHXManifestEntry> = [];
 		for (componentXml in xml.firstElement().elementsNamed("component")) {
 			var xmlName = componentXml.get("id");
 			var qname = componentXml.get("class");
-			mappings.set(xmlName, qname);
+			mappings.set(xmlName, new MXHXManifestEntry(xmlName, qname));
 		}
 		resolver.registerManifest("https://ns.mxhx.dev/2024/tests", mappings);
 

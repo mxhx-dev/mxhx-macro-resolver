@@ -47,10 +47,6 @@ import mxhx.symbols.internal.MXHXFieldSymbol;
 import mxhx.symbols.internal.MXHXFunctionTypeSymbol;
 import mxhx.symbols.internal.MXHXInterfaceSymbol;
 
-/**
-	An MXHX resolver that uses the [Haxe Macro Context](https://haxe.org/manual/macro-context.html)
-	to resolve symbols.
-**/
 class MXHXMacroResolver implements IMXHXResolver {
 	private static final MODULE_STD_TYPES = "StdTypes";
 	private static final TYPE_ARRAY = "Array";
@@ -66,16 +62,10 @@ class MXHXMacroResolver implements IMXHXResolver {
 	private var qnameLookup:Map<String, IMXHXTypeSymbol> = [];
 	private var pendingQnameLookup:Map<String, IMXHXTypeSymbol> = [];
 
-	/**
-		Registers the classes available in a particular MXHX namespace.
-	**/
 	public function registerManifest(uri:String, mappings:Map<String, MXHXManifestEntry>):Void {
 		manifests.set(uri, mappings);
 	}
 
-	/**
-		Resolves the symbol that a tag represents.
-	**/
 	public function resolveTag(tagData:IMXHXTagData):IMXHXSymbol {
 		if (tagData == null) {
 			return null;
@@ -94,9 +84,6 @@ class MXHXMacroResolver implements IMXHXResolver {
 		return resolveTagAsTypeSymbol(tagData);
 	}
 
-	/**
-		Resolves the symbol that an MXHX tag attribute represents.
-	**/
 	public function resolveAttribute(attributeData:IMXHXTagAttributeData):IMXHXSymbol {
 		if (attributeData == null) {
 			return null;
@@ -119,9 +106,6 @@ class MXHXMacroResolver implements IMXHXResolver {
 		return null;
 	}
 
-	/**
-		Resolves a field of a tag.
-	**/
 	public function resolveTagField(tag:IMXHXTagData, fieldName:String):IMXHXFieldSymbol {
 		var tagSymbol = resolveTag(tag);
 		if (tagSymbol == null || !(tagSymbol is IMXHXClassSymbol)) {
@@ -132,9 +116,6 @@ class MXHXMacroResolver implements IMXHXResolver {
 		return MXHXSymbolTools.resolveFieldByName(classSymbol, fieldName);
 	}
 
-	/**
-		Resolves a type from its fully-qualified name.
-	**/
 	public function resolveQname(qname:String):IMXHXTypeSymbol {
 		if (qname == null) {
 			return null;
@@ -1038,6 +1019,67 @@ class MXHXMacroResolver implements IMXHXResolver {
 			}
 		}
 		return resolvedType;
+	}
+}
+
+#elseif doc_gen
+/**
+	An MXHX resolver that uses the [Haxe Macro Context](https://haxe.org/manual/macro-context.html)
+	to resolve symbols.
+**/
+class MXHXMacroResolver implements mxhx.resolver.IMXHXResolver {
+	/**
+		Registers the classes available in a particular MXHX namespace.
+	**/
+	public function registerManifest(uri:String, mappings:Map<String, mxhx.manifest.MXHXManifestEntry>):Void {}
+
+	/**
+		Resolves the symbol that a tag represents.
+	**/
+	public function resolveTag(tagData:mxhx.IMXHXTagData):mxhx.symbols.IMXHXSymbol {
+		return null;
+	}
+
+	/**
+		Resolves the symbol that an MXHX tag attribute represents.
+	**/
+	public function resolveAttribute(attributeData:mxhx.IMXHXTagAttributeData):mxhx.symbols.IMXHXSymbol {
+		return null;
+	}
+
+	/**
+		Resolves a field of a tag.
+	**/
+	public function resolveTagField(tag:IMXHXTagData, fieldName:String):mxhx.symbols.IMXHXFieldSymbol {
+		return null;
+	}
+
+	/**
+		Resolves a type from its fully-qualified name.
+	**/
+	public function resolveQname(qname:String):mxhx.symbols.IMXHXTypeSymbol {
+		return null;
+	}
+
+	/**
+		Gets the tag names registered for a fully-qualified name.
+	**/
+	public function getTagNamesForQname(qnameToFind:String):Map<String, String> {
+		return null;
+	}
+
+	/**
+		Gets the params registered for a fully-qualified name.
+	**/
+	public function getParamsForQname(qnameToFind:String):Array<String> {
+		return null;
+	}
+
+	/**
+		Gets all types.
+	**/
+	public function getTypes():Array<mxhx.symbols.IMXHXTypeSymbol> {
+		return null;
 	}
 }
 #end

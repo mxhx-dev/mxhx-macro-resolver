@@ -35,6 +35,28 @@ class MXHXMacroResolverTagFieldValueTypeTest extends Test {
 		', 148);
 		Assert.notNull(resolvedFieldType);
 		Assert.equals("Array<String>", resolvedFieldType);
+
+		var resolvedParamQnames = resolveTagTypeParamQnames('
+			<tests:TestPropertiesClass xmlns:mx="https://ns.mxhx.dev/2024/basic" xmlns:tests="https://ns.mxhx.dev/2024/tests">
+				<tests:array>
+					<mx:Array type="String"/>
+				</tests:array>
+			</tests:TestPropertiesClass>
+		', 148);
+		Assert.notNull(resolvedParamQnames);
+		Assert.equals(1, resolvedParamQnames.length);
+		Assert.equals("String", resolvedParamQnames[0]);
+
+		var resolvedParamNames = resolveTagTypeParamNames('
+			<tests:TestPropertiesClass xmlns:mx="https://ns.mxhx.dev/2024/basic" xmlns:tests="https://ns.mxhx.dev/2024/tests">
+				<tests:array>
+					<mx:Array type="String"/>
+				</tests:array>
+			</tests:TestPropertiesClass>
+		', 148);
+		Assert.notNull(resolvedParamNames);
+		Assert.equals(1, resolvedParamNames.length);
+		Assert.equals("T", resolvedParamNames[0]);
 	}
 
 	public function testResolveFieldValueTypeBool():Void {
@@ -59,7 +81,7 @@ class MXHXMacroResolverTagFieldValueTypeTest extends Test {
 		', 147);
 		Assert.notNull(resolvedFieldType);
 		// TODO: fix the % that should be used only internally
-		Assert.equals("Class<%>", resolvedFieldType);
+		Assert.equals("Class<Dynamic<%>>", resolvedFieldType);
 	}
 
 	public function testResolveFieldValueTypeDate():Void {
@@ -279,6 +301,117 @@ class MXHXMacroResolverTagFieldValueTypeTest extends Test {
 		Assert.notNull(resolvedFieldType);
 		Assert.equals("fixtures.TestPropertiesClass", resolvedFieldType);
 	}
+
+	public function testResolveFieldValueTypeArrayCollectionInferredTypeNoChildren():Void {
+		var resolvedFieldType = resolveTagType('
+			<tests:TestPropertiesClass xmlns:mx="https://ns.mxhx.dev/2024/basic" xmlns:tests="https://ns.mxhx.dev/2024/tests">
+				<tests:arrayCollection>
+					<tests:ArrayCollection/>
+				</tests:arrayCollection>
+			</tests:TestPropertiesClass>
+		', 161);
+		Assert.notNull(resolvedFieldType);
+		Assert.equals("fixtures.ArrayCollection<Float>", resolvedFieldType);
+
+		var resolvedParamQnames = resolveTagTypeParamQnames('
+			<tests:TestPropertiesClass xmlns:mx="https://ns.mxhx.dev/2024/basic" xmlns:tests="https://ns.mxhx.dev/2024/tests">
+				<tests:arrayCollection>
+					<tests:ArrayCollection/>
+				</tests:arrayCollection>
+			</tests:TestPropertiesClass>
+		', 161);
+		Assert.notNull(resolvedParamQnames);
+		Assert.equals(1, resolvedParamQnames.length);
+		Assert.equals("Float", resolvedParamQnames[0]);
+
+		var resolvedParamNames = resolveTagTypeParamNames('
+			<tests:TestPropertiesClass xmlns:mx="https://ns.mxhx.dev/2024/basic" xmlns:tests="https://ns.mxhx.dev/2024/tests">
+				<tests:arrayCollection>
+					<tests:ArrayCollection/>
+				</tests:arrayCollection>
+			</tests:TestPropertiesClass>
+		', 161);
+		Assert.notNull(resolvedParamNames);
+		Assert.equals(1, resolvedParamNames.length);
+		Assert.equals("T", resolvedParamNames[0]);
+	}
+
+	public function testResolveFieldValueTypeArrayCollectionInferredTypeWithChildren():Void {
+		var resolvedFieldType = resolveTagType('
+			<tests:TestPropertiesClass xmlns:mx="https://ns.mxhx.dev/2024/basic" xmlns:tests="https://ns.mxhx.dev/2024/tests">
+				<tests:arrayCollection>
+					<tests:ArrayCollection>
+						<mx:Float>123.4</mx:Float>
+						<mx:Float>56.78</mx:Float>
+					</tests:ArrayCollection>
+				</tests:arrayCollection>
+			</tests:TestPropertiesClass>
+		', 161);
+		Assert.notNull(resolvedFieldType);
+		Assert.equals("fixtures.ArrayCollection<Float>", resolvedFieldType);
+
+		var resolvedParamQnames = resolveTagTypeParamQnames('
+			<tests:TestPropertiesClass xmlns:mx="https://ns.mxhx.dev/2024/basic" xmlns:tests="https://ns.mxhx.dev/2024/tests">
+				<tests:arrayCollection>
+					<tests:ArrayCollection>
+						<mx:Float>123.4</mx:Float>
+						<mx:Float>56.78</mx:Float>
+					</tests:ArrayCollection>
+				</tests:arrayCollection>
+			</tests:TestPropertiesClass>
+		', 161);
+		Assert.notNull(resolvedParamQnames);
+		Assert.equals(1, resolvedParamQnames.length);
+		Assert.equals("Float", resolvedParamQnames[0]);
+
+		var resolvedParamNames = resolveTagTypeParamNames('
+			<tests:TestPropertiesClass xmlns:mx="https://ns.mxhx.dev/2024/basic" xmlns:tests="https://ns.mxhx.dev/2024/tests">
+				<tests:arrayCollection>
+					<tests:ArrayCollection>
+						<mx:Float>123.4</mx:Float>
+						<mx:Float>56.78</mx:Float>
+					</tests:ArrayCollection>
+				</tests:arrayCollection>
+			</tests:TestPropertiesClass>
+		', 161);
+		Assert.notNull(resolvedParamNames);
+		Assert.equals(1, resolvedParamNames.length);
+		Assert.equals("T", resolvedParamNames[0]);
+	}
+
+	public function testResolveFieldValueTypeArrayCollectionWithType():Void {
+		var resolvedFieldType = resolveTagType('
+			<tests:TestPropertiesClass xmlns:mx="https://ns.mxhx.dev/2024/basic" xmlns:tests="https://ns.mxhx.dev/2024/tests">
+				<tests:arrayCollection>
+					<tests:ArrayCollection type="Float"/>
+				</tests:arrayCollection>
+			</tests:TestPropertiesClass>
+		', 161);
+		Assert.notNull(resolvedFieldType);
+		Assert.equals("fixtures.ArrayCollection<Float>", resolvedFieldType);
+
+		var resolvedParamQnames = resolveTagTypeParamQnames('
+			<tests:TestPropertiesClass xmlns:mx="https://ns.mxhx.dev/2024/basic" xmlns:tests="https://ns.mxhx.dev/2024/tests">
+				<tests:arrayCollection>
+					<tests:ArrayCollection type="Float"/>
+				</tests:arrayCollection>
+			</tests:TestPropertiesClass>
+		', 161);
+		Assert.notNull(resolvedParamQnames);
+		Assert.equals(1, resolvedParamQnames.length);
+		Assert.equals("Float", resolvedParamQnames[0]);
+
+		var resolvedParamNames = resolveTagTypeParamNames('
+			<tests:TestPropertiesClass xmlns:mx="https://ns.mxhx.dev/2024/basic" xmlns:tests="https://ns.mxhx.dev/2024/tests">
+				<tests:arrayCollection>
+					<tests:ArrayCollection type="Float"/>
+				</tests:arrayCollection>
+			</tests:TestPropertiesClass>
+		', 161);
+		Assert.notNull(resolvedParamNames);
+		Assert.equals(1, resolvedParamNames.length);
+		Assert.equals("T", resolvedParamNames[0]);
+	}
 	#end
 
 	public static macro function resolveTagType(mxhxSource:String, start:Int):haxe.macro.Expr {
@@ -293,7 +426,11 @@ class MXHXMacroResolverTagFieldValueTypeTest extends Test {
 		for (componentXml in xml.firstElement().elementsNamed("component")) {
 			var xmlName = componentXml.get("id");
 			var qname = componentXml.get("class");
-			mappings.set(xmlName, new MXHXManifestEntry(xmlName, qname));
+			var params:Array<String> = null;
+			if (componentXml.exists("params")) {
+				params = componentXml.get("params").split(",");
+			}
+			mappings.set(xmlName, new MXHXManifestEntry(xmlName, qname, params));
 		}
 		resolver.registerManifest("https://ns.mxhx.dev/2024/tests", mappings);
 
@@ -313,5 +450,81 @@ class MXHXMacroResolverTagFieldValueTypeTest extends Test {
 			return macro $v{resolvedField.type.qname};
 		}
 		return macro $v{resolved.name};
+	}
+
+	public static macro function resolveTagTypeParamQnames(mxhxSource:String, start:Int):haxe.macro.Expr {
+		var parser = new MXHXParser(mxhxSource, "source.mxhx");
+		var mxhxData = parser.parse();
+		var resolver = new MXHXMacroResolver();
+
+		var manifestPath = haxe.io.Path.join([Sys.getCwd(), "mxhx-manifest.xml"]);
+		var content = sys.io.File.getContent(manifestPath);
+		var xml = Xml.parse(content);
+		var mappings:Map<String, MXHXManifestEntry> = [];
+		for (componentXml in xml.firstElement().elementsNamed("component")) {
+			var xmlName = componentXml.get("id");
+			var qname = componentXml.get("class");
+			var params:Array<String> = null;
+			if (componentXml.exists("params")) {
+				params = componentXml.get("params").split(",");
+			}
+			mappings.set(xmlName, new MXHXManifestEntry(xmlName, qname, params));
+		}
+		resolver.registerManifest("https://ns.mxhx.dev/2024/tests", mappings);
+
+		var offsetTag = mxhxData.findTagOrSurroundingTagContainingOffset(start);
+		if (offsetTag == null) {
+			return macro null;
+		}
+		var resolved = resolver.resolveTag(offsetTag);
+		if (resolved == null) {
+			return macro null;
+		}
+		if ((resolved is IMXHXTypeSymbol)) {
+			var resolvedType:IMXHXTypeSymbol = cast resolved;
+			return macro $v{resolvedType.params.map(param -> param != null ? param.qname : null)};
+		} else if ((resolved is IMXHXFieldSymbol)) {
+			var resolvedField:IMXHXFieldSymbol = cast resolved;
+			return macro $v{resolvedField.type.params.map(param -> param != null ? param.qname : null)};
+		}
+		return macro null;
+	}
+
+	public static macro function resolveTagTypeParamNames(mxhxSource:String, start:Int):haxe.macro.Expr {
+		var parser = new MXHXParser(mxhxSource, "source.mxhx");
+		var mxhxData = parser.parse();
+		var resolver = new MXHXMacroResolver();
+
+		var manifestPath = haxe.io.Path.join([Sys.getCwd(), "mxhx-manifest.xml"]);
+		var content = sys.io.File.getContent(manifestPath);
+		var xml = Xml.parse(content);
+		var mappings:Map<String, MXHXManifestEntry> = [];
+		for (componentXml in xml.firstElement().elementsNamed("component")) {
+			var xmlName = componentXml.get("id");
+			var qname = componentXml.get("class");
+			var params:Array<String> = null;
+			if (componentXml.exists("params")) {
+				params = componentXml.get("params").split(",");
+			}
+			mappings.set(xmlName, new MXHXManifestEntry(xmlName, qname, params));
+		}
+		resolver.registerManifest("https://ns.mxhx.dev/2024/tests", mappings);
+
+		var offsetTag = mxhxData.findTagOrSurroundingTagContainingOffset(start);
+		if (offsetTag == null) {
+			return macro null;
+		}
+		var resolved = resolver.resolveTag(offsetTag);
+		if (resolved == null) {
+			return macro null;
+		}
+		if ((resolved is IMXHXTypeSymbol)) {
+			var resolvedType:IMXHXTypeSymbol = cast resolved;
+			return macro $v{resolvedType.paramNames};
+		} else if ((resolved is IMXHXFieldSymbol)) {
+			var resolvedField:IMXHXFieldSymbol = cast resolved;
+			return macro $v{resolvedField.type.paramNames};
+		}
+		return macro null;
 	}
 }

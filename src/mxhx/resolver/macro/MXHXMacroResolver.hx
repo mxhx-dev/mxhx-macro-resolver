@@ -548,7 +548,12 @@ class MXHXMacroResolver implements IMXHXResolver {
 		// before parsing anything else
 		qnameLookup.set(qname, result);
 
-		result.params = params != null ? params : [];
+		var paramsCount = classType.params.length;
+		if (params != null && params.length < paramsCount) {
+			params = params.copy();
+			params.resize(paramsCount);
+		}
+		result.params = params != null ? params : classType.params.map(p -> null);
 		result.paramNames = classType.params.map(typeParam -> typeParam.name);
 
 		result.interfaces = classType.interfaces.map(i -> {
@@ -624,7 +629,12 @@ class MXHXMacroResolver implements IMXHXResolver {
 		// before parsing anything else
 		qnameLookup.set(qname, result);
 
-		result.params = params != null ? params : [];
+		var paramsCount = classType.params.length;
+		if (params != null && params.length < paramsCount) {
+			params = params.copy();
+			params.resize(paramsCount);
+		}
+		result.params = params != null ? params : classType.params.map(p -> null);
 		result.paramNames = classType.params.map(param -> param.name);
 
 		var superClassType = classType.superClass;
@@ -700,7 +710,12 @@ class MXHXMacroResolver implements IMXHXResolver {
 		// before parsing anything else
 		qnameLookup.set(qname, result);
 
-		result.params = params != null ? params : [];
+		var paramsCount = abstractType.params.length;
+		if (params != null && params.length < paramsCount) {
+			params = params.copy();
+			params.resize(paramsCount);
+		}
+		result.params = params != null ? params : abstractType.params.map(p -> null);
 		result.paramNames = abstractType.params.map(typeParam -> typeParam.name);
 
 		var typeQname = macroTypeToQname(abstractType.type, result);
@@ -756,7 +771,12 @@ class MXHXMacroResolver implements IMXHXResolver {
 		// before parsing anything else
 		qnameLookup.set(qname, result);
 
-		result.params = params != null ? params : [];
+		var paramsCount = abstractType.params.length;
+		if (params != null && params.length < paramsCount) {
+			params = params.copy();
+			params.resize(paramsCount);
+		}
+		result.params = params != null ? params : abstractType.params.map(p -> null);
 		result.paramNames = abstractType.params.map(typeParam -> typeParam.name);
 
 		result.fields = abstractType.impl.get().statics.get().map(field -> createMXHXEnumFieldSymbolForAbstractField(field, result));
@@ -794,7 +814,12 @@ class MXHXMacroResolver implements IMXHXResolver {
 		// before parsing anything else
 		qnameLookup.set(qname, result);
 
-		result.params = params != null ? params : [];
+		var paramsCount = enumType.params.length;
+		if (params != null && params.length < paramsCount) {
+			params = params.copy();
+			params.resize(paramsCount);
+		}
+		result.params = params != null ? params : enumType.params.map(p -> null);
 		result.paramNames = enumType.params.map(typeParam -> typeParam.name);
 
 		var fields:Array<IMXHXEnumFieldSymbol> = [];

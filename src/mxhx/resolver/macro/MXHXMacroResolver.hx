@@ -51,6 +51,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 	private static final MODULE_STD_TYPES = "StdTypes";
 	private static final META_DEFAULT_XML_PROPERTY = "defaultXmlProperty";
 	private static final META_ENUM = ":enum";
+	private static final TYPE_DYNAMIC = "Dynamic";
 
 	public function new() {
 		manifests = MXHXResolvers.getMappings();
@@ -361,6 +362,15 @@ class MXHXMacroResolver implements IMXHXResolver {
 	}
 
 	private function resolveTagAsTypeSymbol(tagData:IMXHXTagData):IMXHXSymbol {
+		var parentTag = tagData.parentTag;
+		var assignedToField:IMXHXFieldSymbol = null;
+		if (parentTag != null) {
+			var resolvedParentTag = resolveTag(parentTag);
+			if ((resolvedParentTag is IMXHXFieldSymbol)) {
+				assignedToField = cast resolvedParentTag;
+			}
+		}
+
 		var prefix = tagData.prefix;
 		var uri = tagData.uri;
 		var localName = tagData.shortName;
@@ -383,45 +393,66 @@ class MXHXMacroResolver implements IMXHXResolver {
 						default:
 					}
 				}
+
 				var paramNames = getParamsForQname(qname);
-				if (paramNames.length > 0) {
-					var paramQnames:Array<String> = paramNames.map(paramName -> {
+				if (paramNames.length > 0 || (discoveredParams != null && discoveredParams.length > 0)) {
+					var resolvedParams:Array<IMXHXTypeSymbol> = [];
+
+					// highest priority: explicit param names in XML attributes
+					for (i in 0...paramNames.length) {
+						var paramName = paramNames[i];
 						var paramNameAttr = tagData.getAttributeData(paramName);
 						if (paramNameAttr == null) {
-							return null;
+							continue;
 						}
-						var itemType:IMXHXTypeSymbol = resolveQnameInternal(paramNameAttr.rawValue);
+						var itemType = resolveQnameInternal(paramNameAttr.rawValue);
 						if (tagData.stateName != null) {
 							return null;
 						}
-						return itemType.qname;
-					});
-					qname += "<";
-					for (i in 0...paramQnames.length) {
-						if (i > 0) {
-							qname += ",";
-						}
-						var paramQname = paramQnames[i];
-						if (paramQname == null) {
-							paramQname = "%";
-						}
-						qname += paramQname;
+						resolvedParams[i] = itemType;
 					}
-					qname += ">";
-					return resolveQname(qname);
-				}
-				if (discoveredParams != null && discoveredParams.length > 0) {
+
+					// next: discovered macro types
+					if (discoveredParams != null) {
+						for (i in 0...discoveredParams.length) {
+							if (resolvedParams[i] != null) {
+								continue;
+							}
+							var discoveredParam = discoveredParams[i];
+							if (discoveredParam != null) {
+								var paramQname = macroTypeToQname(discoveredParam);
+								resolvedParams[i] = resolveQnameInternal(paramQname);
+							} else {
+								resolvedParams[i] = null;
+							}
+						}
+					}
+
+					// finally: inference from the field this tag is assigned to
+					if (assignedToField != null && assignedToField.type != null) {
+						var resolvedType = resolveQname(qname);
+						if (resolvedType.paramNames.length > 0) {
+							for (i in 0...resolvedParams.length) {
+								var param = resolvedParams[i];
+								if (param == null) {
+									var paramName = resolvedType.paramNames[i];
+									resolvedParams[i] = inferTypeParameterForAssignment(resolvedType, paramName, assignedToField.type);
+								}
+							}
+						}
+					}
+
 					qname += "<";
-					for (i in 0...discoveredParams.length) {
-						var param = discoveredParams[i];
+					for (i in 0...resolvedParams.length) {
+						var resolvedParam = resolvedParams[i];
 						if (i > 0) {
 							qname += ",";
 						}
-						var paramQname = macroTypeToQname(param);
-						if (paramQname == null) {
-							paramQname = "%";
+						if (resolvedParam != null) {
+							qname += resolvedParam.qname;
+						} else {
+							qname += "%";
 						}
-						qname += paramQname;
 					}
 					qname += ">";
 				}
@@ -442,6 +473,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 				}
 			}
 		}
+
 		if (tagData.stateName != null) {
 			return null;
 		}
@@ -988,16 +1020,107 @@ class MXHXMacroResolver implements IMXHXResolver {
 			}
 			var argTypeName = macroTypeToQname(arg.t, typeParameterContext);
 			if (argTypeName == null) {
-				argTypeName = "Dynamic";
+				argTypeName = TYPE_DYNAMIC;
 			}
 			qname += argTypeName;
 		}
 		var retName = macroTypeToQname(ret, typeParameterContext);
 		if (retName == null) {
-			retName = "Dynamic";
+			retName = TYPE_DYNAMIC;
 		}
 		qname += ') -> ${retName}';
 		return qname;
+	}
+
+	private static function getTypeParameterNamed(paramName:String, type:IMXHXTypeSymbol):IMXHXTypeSymbol {
+		var params = type.params;
+		var paramNames = type.paramNames;
+		for (i in 0...paramNames.length) {
+			var other = paramNames[i];
+			if (paramName == other) {
+				return params[i];
+			}
+		}
+		return null;
+	}
+
+	private static function inferTypeParameterForAssignment(type:IMXHXTypeSymbol, paramName:String, assignToType:IMXHXTypeSymbol):IMXHXTypeSymbol {
+		if (assignToType == null) {
+			return null;
+		}
+		var param = getTypeParameterNamed(paramName, type);
+		if (param != null) {
+			return param;
+		}
+		var assignToTypeQnameToFind = assignToType.qname;
+		var index = assignToTypeQnameToFind.indexOf("<");
+		if (index != -1) {
+			assignToTypeQnameToFind = assignToTypeQnameToFind.substr(0, index);
+		}
+		var typeQname = type.qname;
+		var index = typeQname.indexOf("<");
+		if (index != -1) {
+			typeQname = typeQname.substr(0, index);
+		}
+		if (assignToTypeQnameToFind == typeQname) {
+			return getTypeParameterNamed(paramName, assignToType);
+		}
+		if ((type is MXHXClassSymbol)) {
+			var typeAsClass:MXHXClassSymbol = cast type;
+			var superClass = typeAsClass.superClass;
+			if (superClass != null && (assignToType is IMXHXClassSymbol)) {
+				var superClassQname = superClass.qname;
+				var index = superClassQname.indexOf("<");
+				if (index != -1) {
+					superClassQname = superClassQname.substr(0, index);
+				}
+				if (superClassQname == assignToTypeQnameToFind) {
+					var superClassParamsMap = @:privateAccess typeAsClass.__paramsMap.get(superClass);
+					for (key => value in superClassParamsMap) {
+						if (value == paramName) {
+							return getTypeParameterNamed(key, assignToType);
+						}
+					}
+				}
+			} else if ((assignToType is IMXHXInterfaceSymbol)) {
+				for (currentInterface in typeAsClass.interfaces) {
+					var currentInterfaceQname = currentInterface.qname;
+					var index = currentInterfaceQname.indexOf("<");
+					if (index != -1) {
+						currentInterfaceQname = currentInterfaceQname.substr(0, index);
+					}
+					if (currentInterfaceQname == assignToTypeQnameToFind) {
+						var interfaceParamsMap = @:privateAccess typeAsClass.__paramsMap.get(currentInterface);
+						for (key => value in interfaceParamsMap) {
+							if (value == paramName) {
+								return getTypeParameterNamed(key, assignToType);
+							}
+						}
+					}
+				}
+			}
+		}
+		if ((type is MXHXInterfaceSymbol)) {
+			var typeAsInterface:MXHXInterfaceSymbol = cast type;
+			if ((assignToType is IMXHXInterfaceSymbol)) {
+				for (currentInterface in typeAsInterface.interfaces) {
+					var currentInterfaceQname = currentInterface.qname;
+					var index = currentInterfaceQname.indexOf("<");
+					if (index != -1) {
+						currentInterfaceQname = currentInterfaceQname.substr(0, index);
+					}
+					if (currentInterfaceQname == assignToTypeQnameToFind) {
+						var interfaceParamsMap = @:privateAccess typeAsInterface.__paramsMap.get(currentInterface);
+						for (key => value in interfaceParamsMap) {
+							if (value == paramName) {
+								return getTypeParameterNamed(key, assignToType);
+							}
+						}
+					}
+				}
+			}
+		}
+		return null;
 	}
 
 	private static function macroTypeToQname(type:Type, ?typeParameterContext:IMXHXTypeSymbol):String {
@@ -1035,7 +1158,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 					return MXHXResolverTools.definitionToQname(abstractType.name, abstractType.pack, abstractType.module,
 						params.map(param -> macroTypeToQname(param)));
 				case TDynamic(t):
-					return "Dynamic<%>";
+					return TYPE_DYNAMIC + "<%>";
 				case TFun(args, ret):
 					return functionArgsAndRetToQname(args, ret, typeParameterContext);
 				case TMono(t):

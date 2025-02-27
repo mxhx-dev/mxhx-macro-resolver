@@ -380,6 +380,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 			if (mappings.exists(localName)) {
 				var manifestEntry = mappings.get(localName);
 				var qname = manifestEntry.qname;
+				var paramNames = manifestEntry.params;
 				var qnameMacroType = resolveMacroTypeForQname(qname);
 				var discoveredParams:Array<Type> = null;
 				if (qnameMacroType != null) {
@@ -394,22 +395,23 @@ class MXHXMacroResolver implements IMXHXResolver {
 					}
 				}
 
-				var paramNames = getParamsForQname(qname);
-				if (paramNames.length > 0 || (discoveredParams != null && discoveredParams.length > 0)) {
+				if ((paramNames != null && paramNames.length > 0) || (discoveredParams != null && discoveredParams.length > 0)) {
 					var resolvedParams:Array<IMXHXTypeSymbol> = [];
 
 					// highest priority: explicit param names in XML attributes
-					for (i in 0...paramNames.length) {
-						var paramName = paramNames[i];
-						var paramNameAttr = tagData.getAttributeData(paramName);
-						if (paramNameAttr == null) {
-							continue;
+					if (paramNames != null) {
+						for (i in 0...paramNames.length) {
+							var paramName = paramNames[i];
+							var paramNameAttr = tagData.getAttributeData(paramName);
+							if (paramNameAttr == null) {
+								continue;
+							}
+							var itemType = resolveQnameInternal(paramNameAttr.rawValue);
+							if (tagData.stateName != null) {
+								return null;
+							}
+							resolvedParams[i] = itemType;
 						}
-						var itemType = resolveQnameInternal(paramNameAttr.rawValue);
-						if (tagData.stateName != null) {
-							return null;
-						}
-						resolvedParams[i] = itemType;
 					}
 
 					// next: discovered macro types

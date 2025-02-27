@@ -548,11 +548,18 @@ class MXHXMacroResolver implements IMXHXResolver {
 		// before parsing anything else
 		qnameLookup.set(qname, result);
 
+		result.params = params != null ? params : [];
+		result.paramNames = classType.params.map(typeParam -> typeParam.name);
+
 		result.interfaces = classType.interfaces.map(i -> {
 			var interfaceType = i.t.get();
 			var interfaceQName = MXHXResolverTools.definitionToQname(interfaceType.name, interfaceType.pack, interfaceType.module,
 				i.params.map(param -> macroTypeToQname(param, result)));
-			return cast resolveQnameInternal(interfaceQName);
+			var resolvedInterface = resolveQnameInternal(interfaceQName);
+			if (resolvedInterface != null) {
+				populateParamsMap(resolvedInterface, i, @:privateAccess result.__paramsMap);
+			}
+			return cast resolvedInterface;
 		});
 
 		for (i in 0...classType.interfaces.length) {
@@ -581,8 +588,6 @@ class MXHXMacroResolver implements IMXHXResolver {
 			@:privateAccess result.__paramsMap.set(resolvedInterface, interfaceParamsMap);
 		}
 
-		result.params = params != null ? params : [];
-		result.paramNames = classType.params.map(typeParam -> typeParam.name);
 		result.fields = classType.fields.get().map(classField -> createMXHXFieldSymbolForClassField(classField, false, result));
 		result.meta = classType.meta.get().map(m -> {
 			var params:Array<String> = null;
@@ -619,6 +624,9 @@ class MXHXMacroResolver implements IMXHXResolver {
 		// before parsing anything else
 		qnameLookup.set(qname, result);
 
+		result.params = params != null ? params : [];
+		result.paramNames = classType.params.map(param -> param.name);
+
 		var superClassType = classType.superClass;
 		var resolvedSuperClass:IMXHXClassSymbol = null;
 		if (superClassType != null) {
@@ -626,29 +634,8 @@ class MXHXMacroResolver implements IMXHXResolver {
 			var superClassQName = MXHXResolverTools.definitionToQname(superClass.name, superClass.pack, superClass.module,
 				superClass.params.map(param -> macroTypeToQname(param.t, result)));
 			resolvedSuperClass = cast resolveQnameInternal(superClassQName);
-
 			if (resolvedSuperClass != null) {
-				var superClassParamsMap:Map<String, String> = [];
-				for (j in 0...superClassType.params.length) {
-					var param = superClassType.params[j];
-					var resolved = resolvedSuperClass.params[j];
-					if (resolved != null) {
-						continue;
-					}
-					switch (param) {
-						case TInst(t, params):
-							var classType = t.get();
-							switch (classType.kind) {
-								case KTypeParameter(constraints):
-									var classParamName = classType.name;
-									var superClassParamName = resolvedSuperClass.paramNames[j];
-									superClassParamsMap.set(superClassParamName, classParamName);
-								default:
-							}
-						default:
-					}
-				}
-				@:privateAccess result.__paramsMap.set(result.superClass, superClassParamsMap);
+				populateParamsMap(resolvedSuperClass, superClassType, @:privateAccess result.__paramsMap);
 			}
 		}
 		result.superClass = resolvedSuperClass;
@@ -657,37 +644,13 @@ class MXHXMacroResolver implements IMXHXResolver {
 			var interfaceType = i.t.get();
 			var interfaceQName = MXHXResolverTools.definitionToQname(interfaceType.name, interfaceType.pack, interfaceType.module,
 				i.params.map(param -> macroTypeToQname(param, result)));
-			return cast resolveQnameInternal(interfaceQName);
+			var resolvedInterface = resolveQnameInternal(interfaceQName);
+			if (resolvedInterface != null) {
+				populateParamsMap(resolvedInterface, i, @:privateAccess result.__paramsMap);
+			}
+			return cast resolvedInterface;
 		});
 
-		for (i in 0...classType.interfaces.length) {
-			var currentInterface = classType.interfaces[i];
-			var resolvedInterface = result.interfaces[i];
-			var interfaceParamsMap:Map<String, String> = [];
-			for (j in 0...currentInterface.params.length) {
-				var param = currentInterface.params[j];
-				var resolved = resolvedInterface.params[j];
-				if (resolved != null) {
-					continue;
-				}
-				switch (param) {
-					case TInst(t, params):
-						var classType = t.get();
-						switch (classType.kind) {
-							case KTypeParameter(constraints):
-								var classParamName = classType.name;
-								var interfaceParamName = resolvedInterface.paramNames[j];
-								interfaceParamsMap.set(interfaceParamName, classParamName);
-							default:
-						}
-					default:
-				}
-			}
-			@:privateAccess result.__paramsMap.set(resolvedInterface, interfaceParamsMap);
-		}
-
-		result.params = params != null ? params : [];
-		result.paramNames = classType.params.map(param -> param.name);
 		result.fields = classType.fields.get().map(classField -> createMXHXFieldSymbolForClassField(classField, false, result));
 		result.meta = classType.meta.get().map(m -> {
 			var params:Array<String> = null;
@@ -739,6 +702,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 
 		result.params = params != null ? params : [];
 		result.paramNames = abstractType.params.map(typeParam -> typeParam.name);
+
 		var typeQname = macroTypeToQname(abstractType.type, result);
 		result.type = resolveQnameInternal(typeQname);
 
@@ -794,6 +758,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 
 		result.params = params != null ? params : [];
 		result.paramNames = abstractType.params.map(typeParam -> typeParam.name);
+
 		result.fields = abstractType.impl.get().statics.get().map(field -> createMXHXEnumFieldSymbolForAbstractField(field, result));
 		result.meta = abstractType.meta.get().map(m -> {
 			var params:Array<String> = null;
@@ -831,6 +796,7 @@ class MXHXMacroResolver implements IMXHXResolver {
 
 		result.params = params != null ? params : [];
 		result.paramNames = enumType.params.map(typeParam -> typeParam.name);
+
 		var fields:Array<IMXHXEnumFieldSymbol> = [];
 		for (key => value in enumType.constructs) {
 			fields.push(createMXHXEnumFieldSymbolForEnumField(value, result));
@@ -856,6 +822,31 @@ class MXHXMacroResolver implements IMXHXResolver {
 		functionType.qname = qname;
 		qnameLookup.set(qname, functionType);
 		return functionType;
+	}
+
+	private function populateParamsMap(resolvedType:IMXHXTypeSymbol, classType:{t:Ref<ClassType>, params:Array<Type>},
+			paramsMap:Map<IMXHXTypeSymbol, Map<String, String>>):Void {
+		var innerParamsMap:Map<String, String> = [];
+		for (j in 0...classType.params.length) {
+			var param = classType.params[j];
+			var resolved = resolvedType.params[j];
+			if (resolved != null) {
+				continue;
+			}
+			switch (param) {
+				case TInst(t, params):
+					var paramClassType = t.get();
+					switch (paramClassType.kind) {
+						case KTypeParameter(constraints):
+							var classParamName = paramClassType.name;
+							var resolvedTypeParamName = resolvedType.paramNames[j];
+							innerParamsMap.set(resolvedTypeParamName, classParamName);
+						default:
+					}
+				default:
+			}
+		}
+		paramsMap.set(resolvedType, innerParamsMap);
 	}
 
 	private function hasValidPrefix(tag:IMXHXTagData):Bool {

@@ -12,6 +12,12 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "any");
 		Assert.notNull(resolved);
 		Assert.equals("Any", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "any");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "any");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveArrayField():Void {
@@ -28,12 +34,24 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 		Assert.notNull(resolvedParamNames);
 		Assert.equals(1, resolvedParamNames.length);
 		Assert.equals("T", resolvedParamNames[0]);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "array");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "array");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveBoolField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "boolean");
 		Assert.notNull(resolved);
 		Assert.equals("Bool", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "boolean");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "boolean");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveClassField():Void {
@@ -41,12 +59,24 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 		Assert.notNull(resolved);
 		// TODO: fix the % that should be used only internally
 		Assert.equals("Class<Dynamic<%>>", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "type");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "type");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveDateField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "date");
 		Assert.notNull(resolved);
 		Assert.equals("Date", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "date");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "date");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveDynamicField():Void {
@@ -54,51 +84,105 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 		Assert.notNull(resolved);
 		// TODO: fix the % that should be used only internally
 		Assert.equals("Dynamic<%>", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "struct");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "struct");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveERegField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "ereg");
 		Assert.notNull(resolved);
 		Assert.equals("EReg", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "ereg");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "ereg");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveFloatField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "float");
 		Assert.equals("Float", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "float");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "float");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveFunctionConstraintField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "func");
 		Assert.equals("haxe.Constraints.Function", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "func");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "func");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveFunctionSignatureField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "funcTyped");
 		Assert.equals("() -> Void", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "funcTyped");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "funcTyped");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveIntField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "integer");
 		Assert.notNull(resolved);
 		Assert.equals("Int", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "integer");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "integer");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveStringField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "string");
 		Assert.notNull(resolved);
 		Assert.equals("String", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "string");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "string");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveUIntField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "unsignedInteger");
 		Assert.notNull(resolved);
 		Assert.equals("UInt", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "unsignedInteger");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "unsignedInteger");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveXmlField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "xml");
 		Assert.notNull(resolved);
 		Assert.equals("Xml", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "xml");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "xml");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveNullField():Void {
@@ -115,36 +199,72 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 		Assert.notNull(resolvedParamNames);
 		Assert.equals(1, resolvedParamNames.length);
 		Assert.equals("T", resolvedParamNames[0]);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "canBeNull");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "canBeNull");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveStrictlyTypedField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "strictlyTyped");
 		Assert.notNull(resolved);
 		Assert.equals("fixtures.TestPropertiesClass", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "strictlyTyped");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "strictlyTyped");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveStrictlyTypedInterfaceField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "strictInterface");
 		Assert.notNull(resolved);
 		Assert.equals("fixtures.ITestPropertiesInterface", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "strictInterface");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "strictInterface");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveAbstractEnumValueField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "abstractEnumValue");
 		Assert.notNull(resolved);
 		Assert.equals("fixtures.TestPropertyAbstractEnum", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "abstractEnumValue");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "abstractEnumValue");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveEnumValueField():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "enumValue");
 		Assert.notNull(resolved);
 		Assert.equals("fixtures.TestPropertyEnum", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "enumValue");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "enumValue");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveClassFromModuleWithDifferentName():Void {
 		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "classFromModuleWithDifferentName");
 		Assert.notNull(resolved);
 		Assert.equals("fixtures.ModuleWithClassThatHasDifferentName.ThisClassHasADifferentNameThanItsModule", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "classFromModuleWithDifferentName");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "classFromModuleWithDifferentName");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveFieldWithTypeParameter():Void {
@@ -202,6 +322,8 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 		Assert.equals("() -> Void", resolved);
 		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "testMethod");
 		Assert.isFalse(isWritable);
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "testMethod");
+		Assert.isTrue(isFieldPublic);
 	}
 
 	public function testResolveDynamicMethod():Void {
@@ -210,6 +332,34 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 		Assert.equals("() -> Void", resolved);
 		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "testDynamicMethod");
 		Assert.isTrue(isWritable);
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "testDynamicMethod");
+		Assert.isTrue(isFieldPublic);
+	}
+
+	public function testResolvePublicModuleClassField():Void {
+		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "publicModuleClass");
+		Assert.notNull(resolved);
+		Assert.equals("fixtures.TestPropertiesClass.PublicModuleClass", resolved);
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "publicModuleClass");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "publicModuleClass");
+		Assert.isTrue(isFieldPublic);
+	}
+
+	public function testResolvePrivateModuleClassField():Void {
+		trace("******* BEFORE");
+		var resolved = resolveFieldTypeQname("fixtures.TestPropertiesClass", "privateModuleClass");
+		Assert.notNull(resolved);
+		Assert.equals("fixtures.TestPropertiesClass.PrivateModuleClass", resolved);
+		trace("******* AFTER");
+
+		var isWritable:Bool = isFieldWritable("fixtures.TestPropertiesClass", "privateModuleClass");
+		Assert.isTrue(isWritable);
+
+		var isFieldPublic:Bool = isFieldPublic("fixtures.TestPropertiesClass", "privateModuleClass");
+		Assert.isFalse(isFieldPublic);
 	}
 	#end
 
@@ -237,10 +387,31 @@ class MXHXMacroResolverQnameFieldTest extends Test {
 		return macro $v{resolvedType.params.map(param -> param != null ? param.qname : null)};
 	}
 
+	public static macro function isFieldStatic(qname:String, fieldName:String):haxe.macro.Expr {
+		var resolver = new MXHXMacroResolver();
+		var resolvedClass:IMXHXClassSymbol = cast resolver.resolveQname(qname);
+		var field = Lambda.find(resolvedClass.fields, field -> field.name == fieldName);
+		return macro $v{field.isStatic};
+	}
+
+	public static macro function isFieldMethod(qname:String, fieldName:String):haxe.macro.Expr {
+		var resolver = new MXHXMacroResolver();
+		var resolvedClass:IMXHXClassSymbol = cast resolver.resolveQname(qname);
+		var field = Lambda.find(resolvedClass.fields, field -> field.name == fieldName);
+		return macro $v{field.isMethod};
+	}
+
 	public static macro function isFieldWritable(qname:String, fieldName:String):haxe.macro.Expr {
 		var resolver = new MXHXMacroResolver();
 		var resolvedClass:IMXHXClassSymbol = cast resolver.resolveQname(qname);
 		var field = Lambda.find(resolvedClass.fields, field -> field.name == fieldName);
 		return macro $v{field.isWritable};
+	}
+
+	public static macro function isFieldPublic(qname:String, fieldName:String):haxe.macro.Expr {
+		var resolver = new MXHXMacroResolver();
+		var resolvedClass:IMXHXClassSymbol = cast resolver.resolveQname(qname);
+		var field = Lambda.find(resolvedClass.fields, field -> field.name == fieldName);
+		return macro $v{field.isPublic};
 	}
 }
